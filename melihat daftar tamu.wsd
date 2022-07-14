@@ -30,7 +30,7 @@
     participant "__:EventRepository__" as repositoryEvent
     participant "__:EventGuestRepository__" as repositoryGuest
 
-    eo -> viewGuest: Mengklik daftar item tamu
+    eo -> viewGuest: Mengklik menu tamu
     activate eo
     activate viewGuest
 

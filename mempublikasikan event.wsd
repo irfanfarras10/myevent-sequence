@@ -1,0 +1,103 @@
+@startuml mempublikasikan event
+
+    title "Mempublikasikan Event"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:EventDetailScreen__" as view
+    participant "__:EventDetailController__" as controller
+    participant "__:Get__" as get
+    participant "__:ApiEvent__" as apiEvent
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:EventController__" as controllerEvent
+    participant "__:EventService__" as serviceEvent
+    participant "__:EventRepository__" as repositoryEvent
+    participant "__:TaskScheduler__" as scheduler
+    participant "__:LiveEventTask__" as taskLive
+    participant "__:ReminderThreeEventTask__" as taskThree
+    participant "__:ReminderOneEventTask__" as taskOne
+    participant "__:PassedEventTask__" as taskPassed
+
+    eo -> view: Mengklik tombol publish event
+    activate eo
+    activate view
+    
+    view -> controller: .doPublishEvent()
+    activate controller
+
+    controller -> apiEvent: .publishEvent(id)
+    activate apiEvent
+
+    apiEvent -> apiUtil: .apiRequestPost(endpoint)
+    activate apiUtil
+    
+    apiUtil -> controllerEvent: HTTP Request
+    activate controllerEvent
+
+    controllerEvent -> serviceEvent: .publish(id)
+    activate serviceEvent
+
+    serviceEvent -> repositoryEvent: .findById(id)
+    activate repositoryEvent
+    repositoryEvent --> serviceEvent: event
+
+    serviceEvent -> serviceEvent: .setStatus()
+    activate serviceEvent
+    deactivate serviceEvent
+
+    serviceEvent -> repositoryEvent: .save()
+    deactivate 
+
+    serviceEvent -> taskLive: .setEvent(event)
+    activate taskLive
+    deactivate taskLive
+
+    serviceEvent -> scheduler: .schedule(liveEventTask, scheduleTime)
+    activate scheduler
+
+    serviceEvent -> taskThree: .setEvent(event)
+    activate taskThree
+    deactivate
+
+    serviceEvent -> scheduler: .schedule(threeEventTask, scheduleTime)
+
+    serviceEvent -> taskOne: .setEvent(event)
+    activate taskOne
+    deactivate
+
+    serviceEvent -> scheduler: .schedule(oneEventTask, scheduleTime)
+
+    serviceEvent -> taskPassed: .setEvent(event)
+    activate taskPassed
+    deactivate
+
+    serviceEvent -> scheduler: .schedule(passedEventTask, scheduleTime)
+    deactivate serviceEvent
+    deactivate scheduler
+
+    controllerEvent --> apiUtil: JSON Response
+    deactivate controllerEvent
+
+    apiUtil --> apiEvent: response
+    deactivate apiUtil
+
+    apiEvent --> controller: response
+    controller -> get: .dialog
+    activate get
+
+    get --> view: Alert Dialog
+    deactivate get
+    view --> eo: Menampilkan pesan popup
+    eo -> view: Mengklik tombol OK 
+    view -> controller: .loadData()
+
+@enduml
