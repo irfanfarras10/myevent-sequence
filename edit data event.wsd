@@ -14,7 +14,7 @@
 
     
     actor "Penyelenggara Event" as eo
-    participant "__:CreateEventDataScreen__" as viewCreateEvent
+    participant "__:EditEventDataScreen__" as viewCreateEvent
     participant "__:EventController__" as controllerCreateEvent
     participant "__:Get__" as libGet
     participant "__:ApiEvent__" as apiEvent
@@ -123,7 +123,7 @@
     eventService -> repository: .save(newEvent)
     activate repository
 
-    alt Insert gagal
+    alt Update gagal
         repository --> eventService: Exception
         deactivate repository 
         eventService --> controllerEventBackend: Exception
@@ -139,7 +139,7 @@
         libGet --> viewCreateEvent: Alert Dialog
         deactivate libGet
         viewCreateEvent --> eo: Menampilkan pesan error
-    else Insert berhasil
+    else Update berhasil
         activate repository
         repository --> eventService: eventId
         deactivate repository 

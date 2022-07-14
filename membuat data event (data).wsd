@@ -82,7 +82,7 @@
         viewCreateEvent -> controllerCreateEvent: .setEventCategory(category)
     end
 
-    eo -> viewCreateEvent: Mengklik tombol Atur Tiket
+    eo -> viewCreateEvent: Mengklik tombol simpan
     viewCreateEvent -> controllerCreateEvent: .createEvent()
     
     controllerCreateEvent -> apiEvent: .createEvent(apiRequest)

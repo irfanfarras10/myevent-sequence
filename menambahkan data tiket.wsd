@@ -64,7 +64,7 @@
         end
     end
 
-    eo -> viewTicket: Mengklik tombol simpan tiket
+    eo -> viewTicket: Mengklik tombol simpan
     viewTicket -> controllerTicket: .createTicket()
     loop request API insert ticket sebanyak jumlah tiket
         controllerTicket -> apiTicket: .createTicket(eventId, data)

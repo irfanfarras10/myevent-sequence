@@ -1,6 +1,6 @@
-@startuml membuat data contact person
+@startuml edit data contact person
 
-    title "Menambahkan Data Contact Person"
+    title "Mengubah Data Contact Person"
     hide footbox
     skinparam shadowing false
     skinparam sequence {    
@@ -22,7 +22,7 @@
     participant "__:EventContactPersonService__" as serviceContactPerson
     participant "__:EventContactPersonRepository__" as repositoryContactPerson
     
-    loop
+    opt
         eo -> viewContactPerson: Memasukkan nama
         activate eo
         activate viewContactPerson
@@ -32,30 +32,33 @@
             controllerContactPerson --> viewContactPerson: Contact person name error message
             viewContactPerson --> eo: Menampilkan pesan error
         end
+    end
 
+    opt
         eo -> viewContactPerson: Memasukkan ID / nomor media sosial
         viewContactPerson -> controllerContactPerson: setContactPersonNumber(index, number)
         alt Data tidak valid
             controllerContactPerson --> viewContactPerson: Contact person number error message
             viewContactPerson --> eo: Menampilkan pesan error
         end
-
-        
-        eo -> viewContactPerson: Memilih media sosial
-        viewContactPerson -> controllerContactPerson: setContactPersonSocialMedia(index, socialMediaId)
     end
 
+    opt
+        eo -> viewContactPerson: Memilih media sosial
+        viewContactPerson -> controllerContactPerson: setContactPersonSocialMedia(index, socialMediaId)
+    end       
+    
     eo -> viewContactPerson : Mengklik tombol simpan
-    viewContactPerson -> controllerContactPerson: .createContactPerson()
+    viewContactPerson -> controllerContactPerson: .updateContactPerson()
 
-    loop insert data sebanyak jumlah data ContactPerson
-        controllerContactPerson -> apiContactPerson: .createContactPerson(eventId, data)
+    loop update data sebanyak jumlah data ContactPerson
+        controllerContactPerson -> apiContactPerson: .createContactPerson(eventId, contactPersonId, data)
         activate apiContactPerson
-        apiContactPerson -> apiUtil: .apiRequestPost(endpoint, data)
+        apiContactPerson -> apiUtil: .apiRequestPut(endpoint, data)
         activate apiUtil
         apiUtil -> controllerContactPersonBackend: HTTP Request
         activate controllerContactPersonBackend
-        controllerContactPersonBackend -> serviceContactPerson: .create(id, data)
+        controllerContactPersonBackend -> serviceContactPerson: .update(eventId, cpId, data)
         activate serviceContactPerson
         serviceContactPerson -> serviceContactPerson: .setData(data)
         activate serviceContactPerson
@@ -64,7 +67,7 @@
         activate repositoryContactPerson
     end
 
-     alt Insert gagal
+     alt Update gagal
             repositoryContactPerson --> serviceContactPerson: Exception
             deactivate 
             serviceContactPerson --> controllerContactPersonBackend: Exception
@@ -80,7 +83,7 @@
             libGet --> viewContactPerson: Alert Dialog
             deactivate libGet
             viewContactPerson --> eo: Menampilkan Pesan Error
-        else Insert berhasil
+        else Update berhasil
             activate controllerContactPersonBackend
             controllerContactPersonBackend --> apiUtil: JSON Response
             deactivate controllerContactPersonBackend
@@ -98,8 +101,8 @@
             eo -> viewContactPerson: Mengklik tombol OK
            
             viewContactPerson -> controllerContactPerson: .back(route)
-            controllerContactPerson --> viewContactPerson: Redirect to event list screen
-            viewContactPerson --> eo: Menampilkan halaman daftar event
+            controllerContactPerson --> viewContactPerson: Redirect to event detail screen
+            viewContactPerson --> eo: Menampilkan halaman detail event
 
         end
 

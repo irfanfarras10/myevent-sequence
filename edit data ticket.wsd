@@ -62,8 +62,8 @@
     end
 
     eo -> viewTicket: Mengklik tombol simpan tiket
-    viewTicket -> controllerTicket: .createTicket()
-    loop request API insert ticket sebanyak jumlah tiket
+    viewTicket -> controllerTicket: .updateTicket()
+    loop request API update ticket sebanyak jumlah tiket
         controllerTicket -> apiTicket: .updateTicket(eventId, data)
         activate apiTicket
         apiTicket -> apiUtil: .apiRequestPut(endpoint, data)
@@ -82,7 +82,7 @@
         activate repositoryTicket
     end
 
-      alt Insert gagal
+      alt Update gagal
             repositoryTicket --> serviceTicket: Exception
             deactivate 
             serviceTicket --> controllerTicketBackend: Exception
@@ -98,7 +98,7 @@
             libGet --> viewTicket: Alert Dialog
             deactivate libGet
             viewTicket --> eo: Menampilkan Pesan Error
-        else Insert berhasil
+        else Update berhasil
             activate controllerTicketBackend
             controllerTicketBackend --> apiUtil: JSON Response
             deactivate controllerTicketBackend

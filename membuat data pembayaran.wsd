@@ -41,7 +41,7 @@
         end
     end
 
-    eo -> viewPayment : Mengklik tombol simpan pembayaran
+    eo -> viewPayment : Mengklik tombol simpan
     viewPayment -> controllerPayment: .createPayment()
 
     loop insert data sebanyak jumlah data payment
