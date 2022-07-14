@@ -83,7 +83,9 @@
         deactivate repositoryEvent
         serviceTicket -> repositoryTicket: .save(ticketData)
         activate repositoryTicket
-        alt Insert gagal
+    end
+
+      alt Insert gagal
             repositoryTicket --> serviceTicket: Exception
             deactivate 
             serviceTicket --> controllerTicketBackend: Exception
@@ -125,6 +127,5 @@
                 viewTicket --> eo: Menampilkan halaman tambah contact person
             end
         end
-    end
 
 @enduml

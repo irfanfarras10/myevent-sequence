@@ -1,0 +1,102 @@
+@startuml membuat data pembayaran
+
+    title "Menambahkan Data Pembayaran"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:CreateEventPaymentScreen__" as viewPayment
+    participant "__:PaymentController__" as controllerPayment
+    participant "__:Get__" as libGet
+    participant "__:ApiPayment__" as apiPayment
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:EventPaymentController__" as controllerPaymentBackend
+    participant "__:EventPaymentService__" as servicePayment
+    participant "__:EventPaymentRepository__" as repositoryPayment
+    
+    loop
+        eo -> viewPayment: Memasukkan tipe pembayaran
+        activate eo
+        activate viewPayment
+        viewPayment -> controllerPayment: setPaymentType(index, name)
+        activate controllerPayment
+        alt Data tidak valid
+            controllerPayment --> viewPayment: payment type error message
+            viewPayment --> eo: Menampilkan pesan error
+        end
+
+        eo -> viewPayment: Memasukkan nomor pembayaran
+        viewPayment -> controllerPayment: setPaymentNumber(index, number)
+        alt Data tidak valid
+            controllerPayment --> viewPayment: payment number error message
+            viewPayment --> eo: Menampilkan pesan error
+        end
+    end
+
+    eo -> viewPayment : Mengklik tombol simpan pembayaran
+    viewPayment -> controllerPayment: .createPayment()
+
+    loop insert data sebanyak jumlah data payment
+        controllerPayment -> apiPayment: .createPayment(eventId, data)
+        activate apiPayment
+        apiPayment -> apiUtil: .apiRequestPost(endpoint, data)
+        activate apiUtil
+        apiUtil -> controllerPaymentBackend: HTTP Request
+        activate controllerPaymentBackend
+        controllerPaymentBackend -> servicePayment: .create(id, data)
+        activate servicePayment
+        servicePayment -> servicePayment: .setData(data)
+        activate servicePayment
+        deactivate servicePayment
+        servicePayment -> repositoryPayment: .save(paymentData)
+        activate repositoryPayment
+    end
+
+     alt Insert gagal
+            repositoryPayment --> servicePayment: Exception
+            deactivate 
+            servicePayment --> controllerPaymentBackend: Exception
+            deactivate 
+            controllerPaymentBackend --> apiUtil: JSON Response
+            deactivate 
+            apiUtil --> apiPayment: response 
+            deactivate 
+            apiPayment --> controllerPayment: response 
+            deactivate 
+            controllerPayment -> libGet: .defaultDialog()
+            activate libGet
+            libGet --> viewPayment: Alert Dialog
+            deactivate libGet
+            viewPayment --> eo: Menampilkan Pesan Error
+        else Insert berhasil
+            activate controllerPaymentBackend
+            controllerPaymentBackend --> apiUtil: JSON Response
+            deactivate controllerPaymentBackend
+            activate apiUtil
+            apiUtil --> apiPayment: response
+            deactivate apiUtil
+            activate apiPayment
+            apiPayment --> controllerPayment: response
+            deactivate apiPayment
+            controllerPayment -> libGet: .defaultDialog()
+            activate libGet
+            libGet --> viewPayment: Alert Dialog
+            deactivate libGet
+            viewPayment --> eo: Menampilkan Pesan Berhasil
+            eo -> viewPayment: Mengklik tombol OK
+           
+            viewPayment -> controllerPayment: .toNamed(route)
+            controllerPayment --> viewPayment: Redirect to create event contact person screen
+            viewPayment --> eo: Menampilkan halaman tambah contact person
+
+        end
+
+@enduml
