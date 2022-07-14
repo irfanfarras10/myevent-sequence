@@ -1,0 +1,28 @@
+@startuml melihat data peserta
+
+    title "Melihat Data Peserta"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:ParticipantScreen__" as view
+    participant "__:Get__" as get
+
+    eo -> view: Mengklik daftar peserta
+    activate eo
+    activate view
+    view -> get: .dialog()
+    activate get
+    get --> view: Alert Dialog
+    deactivate
+    view --> eo: Menampilkan detail peserta
+
+@enduml
