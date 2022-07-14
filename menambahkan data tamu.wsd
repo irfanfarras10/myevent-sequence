@@ -1,0 +1,114 @@
+@startuml menambah data tamu
+
+    title "Menambahkan Data Tamu"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:CreateGuestScreen__" as viewGuest
+    participant "__:GuestController__" as controllerGuest
+    participant "__:CreateEventGuestApiRequestModel__" as modelRequest
+    participant "__:Get__" as libGet
+    participant "__:ApiGuest__" as apiGuest
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:EventGuestController__" as controllerGuestBackend
+    participant "__:EventGuestService__" as serviceGuest
+    participant "__:EventRepository__" as repositoryEvent
+    participant "__:EventGuestDao__" as modelEventGuest
+    participant "__:EventGuestRepository__" as repositoryGuest
+
+    loop Data tidak valid
+        eo -> viewGuest: Memasukkan nama
+        activate eo
+        activate viewGuest
+        viewGuest -> controllerGuest: .validateName(name)
+        alt Nama tidak valid
+            controllerGuest --> viewGuest: nameErrorMessage 
+            viewGuest --> eo: Menampilkan pesan error
+        end
+
+        eo -> viewGuest: Memasukkan email
+        viewGuest -> controllerGuest: .validateEmail(email)
+        alt Nama tidak valid
+            controllerGuest --> viewGuest: emailErrorMessage 
+            viewGuest --> eo: Menampilkan pesan error
+        end
+
+        eo -> viewGuest: Memasukkan nomor HP
+        viewGuest -> controllerGuest: .validatePhoneNumber(phoneNumber)
+        alt Nama tidak valid
+            controllerGuest --> viewGuest: phoneNumberErrorMessage 
+            viewGuest --> eo: Menampilkan pesan error
+        end
+    end
+
+    eo -> viewGuest: Mengklik tombol simpan
+
+    viewGuest -> controllerGuest: .createGuest
+    activate controllerGuest
+
+    controllerGuest -> modelRequest: .fromJson(data)
+    activate modelRequest 
+    modelRequest --> controllerGuest: apiRequest
+    deactivate
+
+    controllerGuest -> apiGuest: .createGuestData(eventId, data)
+    activate apiGuest
+
+    apiGuest -> apiUtil: .apiRequestPost(endpoint, data)
+    activate apiUtil
+
+    apiUtil -> controllerGuestBackend: HTTP Request
+    activate controllerGuestBackend
+
+    controllerGuestBackend -> serviceGuest: .create(id, guestDto)
+    activate serviceGuest
+
+    serviceGuest -> repositoryEvent: .findById(eventId)
+    activate repositoryEvent
+    repositoryEvent --> serviceGuest: eventData
+    deactivate 
+
+    serviceGuest -> modelEventGuest: .EventGuestDao()
+    activate modelEventGuest
+    modelEventGuest --> serviceGuest: guest
+    deactivate 
+
+    serviceGuest -> serviceGuest: .setData(data)
+    activate serviceGuest
+    deactivate serviceGuest 
+
+    serviceGuest -> repositoryGuest: .save(guest)
+    activate repositoryGuest
+    deactivate repositoryGuest
+    deactivate serviceGuest 
+
+    controllerGuestBackend --> apiUtil: JSON Response
+    deactivate controllerGuestBackend
+
+    apiUtil --> apiGuest: response
+    deactivate apiUtil
+
+    apiGuest --> controllerGuest: response
+    deactivate apiGuest
+
+    controllerGuest -> libGet: .defaultDialog()
+    activate libGet
+    libGet --> viewGuest: Alert Dialog
+    deactivate libGet
+    viewGuest --> eo: Menampilkan Pesan Berhasil
+    eo -> viewGuest: Mengklik tombol OK
+
+    viewGuest -> controllerGuest: .toNamed(route)
+    controllerGuest --> viewGuest: Redirect to before screen
+    viewGuest --> eo: Menampilkan halaman sebelumnya
+
+@enduml

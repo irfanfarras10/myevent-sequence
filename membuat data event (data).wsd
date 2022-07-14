@@ -43,7 +43,7 @@
 
         eo -> viewCreateEvent: Memasukkan deskripsi event 
         viewCreateEvent -> controllerCreateEvent: .validateDescription(description)
-        alt Nama tidak valid
+        alt Deskripsi tidak valid
             controllerCreateEvent --> viewCreateEvent: descriptionErrorMessage 
             viewCreateEvent --> eo: Menampilkan pesan error
         end
@@ -61,7 +61,7 @@
         viewCreateEvent -> controllerCreateEvent: .setEventTimeStart()
         eo -> viewCreateEvent: Memasukkan jam selesai event
         viewCreateEvent -> controllerCreateEvent: .setEventTimeEnd()
-        alt jam awal dan akhir tidak valid
+        alt Jam awal dan akhir tidak valid
             controllerCreateEvent --> viewCreateEvent: timeEventErrorMessage
             viewCreateEvent --> eo: Menampilkan pesan error
         end
