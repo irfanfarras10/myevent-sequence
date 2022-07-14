@@ -1,0 +1,73 @@
+@startuml "melihat daftar peserta"
+
+    title "Melihat Daftar Peserta"
+    hide footbox
+    skinparam  shadowing false
+
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+
+    actor "Penyelenggara Event" as eo 
+    participant "__:ParticipantScreen__" as viewParticipantList
+    participant "__:ParticipantController__" as controllerParticipantList
+    participant "__:ViewParticipantApiResponseModel__" as modelParticipantList
+    participant "__:ApiParticipant__" as apiParticipant
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:ParticipantController__" as controllerParticipant
+    participant "__:ParticipantService__" as serviceParticipant
+    participant "__:ParticipantRepository__" as repositoryParticipant
+    participant "__:ViewEventParticipantListApiResponse__" as responseModel
+
+    eo -> viewParticipantList: Mengklik menu peserta
+    activate eo
+    activate viewParticipantList
+    
+    viewParticipantList -> controllerParticipantList: .loadParticipantData()
+    activate controllerParticipantList
+
+        controllerParticipantList -> apiParticipant: .getParticipantConfirmed()
+        activate apiParticipant
+        apiParticipant -> apiUtil: .apiRequestGet(endpoint)
+        activate apiUtil
+        apiUtil -> controllerParticipant: HTTP Request
+        activate controllerParticipant
+        controllerParticipant -> serviceParticipant: .getParticipantConfirmed()
+        activate serviceParticipant
+        serviceParticipant -> repositoryParticipant: .findByStatusCpnfirmed(eventId)
+        activate repositoryParticipant 
+        repositoryParticipant --> serviceParticipant: participantEvent
+        deactivate repositoryParticipant 
+        serviceParticipant -> responseModel: viewParticipantListApiResponse()
+        activate responseModel
+        responseModel --> serviceParticipant: viewParticipantListApiResponse
+        deactivate responseModel    
+        serviceParticipant --> controllerParticipant: viewParticipantListApiResponse
+        deactivate serviceParticipant
+        controllerParticipant --> apiUtil: JSON Response
+        deactivate controllerParticipant
+        apiUtil --> apiParticipant: response
+        deactivate apiUtil
+        apiParticipant --> controllerParticipantList: response 
+        controllerParticipantList -> controllerParticipantList: .checkApiResponse(response)
+        activate controllerParticipantList
+        deactivate controllerParticipantList
+        alt Response Berhasil 
+            controllerParticipantList -> modelParticipantList: .fromJson(response)
+            activate modelParticipantList
+            modelParticipantList --> controllerParticipantList: viewParticipantListApiResponseModel
+            deactivate modelParticipantList
+            controllerParticipantList --> viewParticipantList: participantList
+            viewParticipantList --> eo: Menampilkan daftar peserta
+        else Response Gagal
+            controllerParticipantList --> viewParticipantList: Error Handling View
+            viewParticipantList --> eo: Menampilkan tampilan error 
+        end 
+
+@enduml
