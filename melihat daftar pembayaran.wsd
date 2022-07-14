@@ -1,6 +1,6 @@
-@startuml "melihat daftar peserta"
+@startuml "melihat daftar pembayaran"
 
-    title "Melihat Daftar Peserta"
+    title "Melihat Daftar Pembayaran"
     hide footbox
     skinparam  shadowing false
 
@@ -25,20 +25,20 @@
     participant "__:ParticipantRepository__" as repositoryParticipant
     participant "__:ViewEventParticipantListApiResponse__" as responseModel
 
-    eo -> viewParticipantList: Mengklik menu peserta
+    eo -> viewParticipantList: Mengklik menu peserta dan tombol konfirmasi
     activate eo
     activate viewParticipantList
     
     viewParticipantList -> controllerParticipantList: .loadParticipantData()
     activate controllerParticipantList
 
-        controllerParticipantList -> apiParticipant: .getParticipantConfirmed()
+        controllerParticipantList -> apiParticipant: .getParticipantWait(eventId)
         activate apiParticipant
         apiParticipant -> apiUtil: .apiRequestGet(endpoint)
         activate apiUtil
         apiUtil -> controllerParticipant: HTTP Request
         activate controllerParticipant
-        controllerParticipant -> serviceParticipant: .getParticipantConfirmed()
+        controllerParticipant -> serviceParticipant: .getParticipantWait()
         activate serviceParticipant
         serviceParticipant -> repositoryParticipant: .findByStatusCpnfirmed(eventId)
         activate repositoryParticipant 
@@ -53,10 +53,9 @@
         controllerParticipant --> apiUtil: JSON Response
         deactivate controllerParticipant
         apiUtil --> apiParticipant: response
-      
         deactivate apiUtil
         apiParticipant --> controllerParticipantList: response 
-          deactivate apiParticipant
+        deactivate 
         controllerParticipantList -> controllerParticipantList: .checkApiResponse(response)
         activate controllerParticipantList
         deactivate controllerParticipantList
