@@ -1,0 +1,116 @@
+@startuml membatalkan event
+
+    title "Membatalkan Event"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Event Organizer" as eo
+    participant "__:EventDetailScreen__" as view
+    participant "__:EventDetailControler__" as controller
+    participant "__:ApiEvent__" as apiEvent
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:Get__" as get
+    participant "__:EventController__" as controllerEvent
+    participant "__:EmailService__" as serviceEmail
+    participant "__:JavaMailSender__" as mail
+    participant "__:EventRepository__" as repositoryEvent
+    participant "__:EventStatusRepository__" as repositoryEventStatus
+    participant "__:EventGuestRepository__" as repositoryEventGuest
+    participant "__:ParticipantRepository__" as repositoryParticipant
+
+    eo -> view: Mengklik menu batalkan event
+    activate eo
+    activate view
+
+    view --> eo: Menampilkan dialog konfirmasi
+    eo -> view: Mengklik tombol OK
+    view --> eo: Menampilkan dialog alasan pembatalan
+    eo -> view: Mengisi alasan pembatalan
+
+    view -> controller: .cancelEvent()
+    activate controller
+
+    controller -> apiEvent: .cancelEvent(id, data)
+    activate apiEvent
+
+    apiEvent -> apiUtil: .apiRequestPost(endpoint, data)
+    activate apiUtil
+
+    apiUtil -> controllerEvent: HTTP Request
+    activate controllerEvent
+
+    controllerEvent -> serviceEmail: .cancel(id, message)
+    activate serviceEmail
+
+    serviceEmail -> repositoryEvent: .findById(id)
+    activate repositoryEvent
+    repositoryEvent --> serviceEmail: event
+
+    serviceEmail -> repositoryEventStatus: .findById(5)
+    activate repositoryEventStatus
+    repositoryEventStatus --> serviceEmail: cancelledEventStatus
+    deactivate 
+    
+    serviceEmail -> repositoryEventGuest: .findByEvent(id)
+    activate repositoryEventGuest
+    repositoryEventGuest --> serviceEmail: eventGuest
+    deactivate 
+
+    serviceEmail -> repositoryParticipant: .findByEvent(id)
+    activate repositoryParticipant
+    repositoryParticipant --> serviceEmail: participants
+    deactivate 
+
+    serviceEmail -> serviceEmail: .getMessage()
+    activate serviceEmail
+    deactivate
+
+    serviceEmail -> serviceEmail: .mailCancelMessage()
+    activate serviceEmail
+    deactivate
+
+    serviceEmail -> mail: .createMimeMessage()
+    activate mail
+    mail --> serviceEmail: messages
+    
+    loop Get multiple email guest
+        serviceEmail -> serviceEmail: .add(email)
+    end
+
+    loop Get multiple email participant
+        serviceEmail -> serviceEmail: .add(email)
+    end
+
+    serviceEmail -> mail: .send(messages)
+    deactivate mail
+
+    serviceEmail -> repositoryEvent: .save(event)
+    deactivate repositoryEvent
+    deactivate serviceEmail
+
+    controllerEvent --> apiUtil: JSON Response
+    deactivate
+
+    apiUtil --> apiEvent: response
+    deactivate
+
+    apiEvent --> controller: response
+    deactivate
+
+    controller -> get: .dialog
+    activate get
+
+    get --> view: Alert Dialog
+    deactivate get
+    view --> eo: Menampilkan pesan popup
+    eo -> view: Mengklik tombol OK 
+    view -> controller: .loadData()
+@enduml
