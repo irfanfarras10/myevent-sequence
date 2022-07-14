@@ -1,0 +1,42 @@
+@startuml membagikan event ke social media
+
+    title "Membagikan Event ke Social Media"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo   
+    participant "__:NavigationDrawerWidget__" as view
+    participant "__:EventListController__" as controller
+    participant "__:LocationUtil__" as locUtil
+    participant "__:FlutterShare__" as shareUtil
+
+    eo -> view: Mengklik tombol share
+    activate eo
+    activate view
+
+    view -> controller: .promoteEvent(data)
+    activate controller
+
+    controller -> locUtil: .parseLocation(location)
+    activate locUtil
+    locUtil --> controller: location
+    deactivate
+
+    controller -> shareUtil: .share(data)
+    activate shareUtil
+
+    shareUtil --> view: Social Media Chooser
+    view --> eo: Menampilkan daftar media sosial
+    eo -> view: Memilih media sosial
+    view -> shareUtil: .share(data)
+    deactivate shareUtil
+
+@enduml
