@@ -1,0 +1,29 @@
+@startuml "mencari data peserta"
+
+    title "Mencari Data Peserta"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:ParticipantScreen__" as view
+    participant "__:ParticipantController__" as controller
+
+    eo -> view: Memasukkan kata kunci nama
+    activate eo
+    activate view
+    view -> controller: .searchParticipant(keyword)
+    activate controller
+    controller --> view: dataList
+    deactivate
+    view --> eo: Menampilkan dafta peserta berdasarkan hasil pencarian
+    
+
+@enduml
