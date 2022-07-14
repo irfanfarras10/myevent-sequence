@@ -1,0 +1,146 @@
+@startuml membagikan file atau link
+
+    title "Membagikan File atau Link"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:ShareFileScreen__" as view
+    participant "__:SharingFileController__" as controller
+    participant "__:Get__" as get
+    participant "__:ApiEvent__" as apiEvent
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:EventController__" as controllerBackend
+    participant "__:ShareFileData__" as modelFileData
+    participant "__:EmailService__" as emailService
+    participant "__:EventRepository__" as repositoryEvent
+    participant "__:EventGuestRepository__" as repositoryEventGuest
+    participant "__:ParticipantRepository__" as repositoryParticipant
+    participant "__:JavaMailSender__" as libMail
+
+    loop Data tidak valid
+        eo -> view: Memasukkan judul
+        activate eo
+        activate view
+        view -> controller: .setTitle(title)
+        activate controller
+        alt Data tidak valid
+            controller --> view: title error message
+            view --> eo: Menampilkan pesan error
+        end
+        
+        opt
+            eo -> view: Mengklik tombol file
+            view -> controller: .setFile()
+            controller --> view: file picker
+            view --> eo: Menampilkan file picker
+            eo -> view: Memilih file
+            view -> controller: .setFile()
+        end
+
+        opt
+            eo -> view: Memasukkan link
+            view -> controller: .setLink(link)
+            alt Data tidak valid
+                controller --> view: link error message
+                view --> eo: Menampilkan pesan error
+            end
+        end
+
+        eo -> view: Memasukkan deskripsi
+        view -> controller: .setLink(link)
+        alt Data tidak valid
+            controller --> view: link error message
+            view --> eo: Menampilkan pesan error
+        end
+    end
+
+    eo -> view: Mengklik tombol bagikan
+    view -> controller: .shareFile()
+    
+    controller -> apiEvent: .shareFile(eventId, data)
+    activate apiEvent
+
+    apiEvent -> apiUtil: .apiRequestMultipartPost(endpoint, data)
+    activate apiUtil
+
+    apiUtil -> controllerBackend: HTTP Request
+    activate controllerBackend
+    controllerBackend -> modelFileData: .ShareFileData()
+    activate modelFileData
+    modelFileData --> controllerBackend: shareFileData
+    deactivate modelFileData
+    alt File tidak ada 
+        controllerBackend -> controllerBackend: .setLink(link)
+        activate controllerBackend
+        deactivate
+    else File ada
+        controllerBackend -> controllerBackend: .setFile(file)
+        activate controllerBackend
+        deactivate
+    end 
+
+    controllerBackend -> emailService: .sendFile(id, shareFileData)
+    activate emailService
+
+    emailService -> repositoryEvent: .findById(id)
+    activate repositoryEvent
+    repositoryEvent --> emailService: eventData
+    deactivate
+
+    emailService -> repositoryEventGuest: .findByEvent(id)
+    activate repositoryEventGuest
+    repositoryEventGuest --> emailService: eventGuest
+    deactivate
+
+    emailService -> repositoryParticipant: .findByEvent(id)
+    activate repositoryParticipant
+    repositoryParticipant --> emailService: participants
+    deactivate
+
+    alt Link tidak ada 
+        emailService -> emailService: .mailSharing(data)
+    else Link ada
+        emailService -> emailService: .mailSharing(data, link)
+    end
+
+    emailService -> libMail: .createMimeMessage()
+    activate libMail
+    libMail --> emailService: message
+
+    loop add multiple email participant
+        emailService -> emailService: .add(participant)
+    end
+    
+    loop add multiple email guest
+        emailService -> emailService: .add(guest)
+    end
+
+    emailService -> libMail: .send(message)
+    deactivate emailService
+    deactivate libMail
+
+    controllerBackend --> apiUtil: JSON Response
+    deactivate controllerBackend
+
+    apiUtil -->  apiEvent: response
+    deactivate apiUtil
+
+    apiEvent --> controller: response
+    deactivate apiEvent
+    controller -> get: .dialog
+    activate get
+
+    get --> view: Alert Dialog
+    deactivate get
+    view --> eo: Menampilkan pesan popup
+
+@enduml
