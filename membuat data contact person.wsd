@@ -1,0 +1,106 @@
+@startuml membuat data contact person
+
+    title "Menambahkan Data Contact Person"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:CreateEventContactPersonScreen__" as viewContactPerson
+    participant "__:ContactPersonController__" as controllerContactPerson
+    participant "__:Get__" as libGet
+    participant "__:ApiContactPerson__" as apiContactPerson
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:EventContactPersonController__" as controllerContactPersonBackend
+    participant "__:EventContactPersonService__" as serviceContactPerson
+    participant "__:EventContactPersonRepository__" as repositoryContactPerson
+    
+    loop
+        eo -> viewContactPerson: Memasukkan nama
+        activate eo
+        activate viewContactPerson
+        viewContactPerson -> controllerContactPerson: setContactPersonName(index, name)
+        activate controllerContactPerson
+        alt Data tidak valid
+            controllerContactPerson --> viewContactPerson: Contact person name error message
+            viewContactPerson --> eo: Menampilkan pesan error
+        end
+
+        eo -> viewContactPerson: Memasukkan ID / nomor media sosial
+        viewContactPerson -> controllerContactPerson: setContactPersonNumber(index, number)
+        alt Data tidak valid
+            controllerContactPerson --> viewContactPerson: Contact person number error message
+            viewContactPerson --> eo: Menampilkan pesan error
+        end
+
+        
+        eo -> viewContactPerson: Memilih media sosial
+        viewContactPerson -> controllerContactPerson: setContactPersonSocialMedia(index, socialMediaId)
+    end
+
+    eo -> viewContactPerson : Mengklik tombol simpan pembayaran
+    viewContactPerson -> controllerContactPerson: .createContactPerson()
+
+    loop insert data sebanyak jumlah data ContactPerson
+        controllerContactPerson -> apiContactPerson: .createContactPerson(eventId, data)
+        activate apiContactPerson
+        apiContactPerson -> apiUtil: .apiRequestPost(endpoint, data)
+        activate apiUtil
+        apiUtil -> controllerContactPersonBackend: HTTP Request
+        activate controllerContactPersonBackend
+        controllerContactPersonBackend -> serviceContactPerson: .create(id, data)
+        activate serviceContactPerson
+        serviceContactPerson -> serviceContactPerson: .setData(data)
+        activate serviceContactPerson
+        deactivate serviceContactPerson
+        serviceContactPerson -> repositoryContactPerson: .save(ContactPersonData)
+        activate repositoryContactPerson
+    end
+
+     alt Insert gagal
+            repositoryContactPerson --> serviceContactPerson: Exception
+            deactivate 
+            serviceContactPerson --> controllerContactPersonBackend: Exception
+            deactivate 
+            controllerContactPersonBackend --> apiUtil: JSON Response
+            deactivate 
+            apiUtil --> apiContactPerson: response 
+            deactivate 
+            apiContactPerson --> controllerContactPerson: response 
+            deactivate 
+            controllerContactPerson -> libGet: .defaultDialog()
+            activate libGet
+            libGet --> viewContactPerson: Alert Dialog
+            deactivate libGet
+            viewContactPerson --> eo: Menampilkan Pesan Error
+        else Insert berhasil
+            activate controllerContactPersonBackend
+            controllerContactPersonBackend --> apiUtil: JSON Response
+            deactivate controllerContactPersonBackend
+            activate apiUtil
+            apiUtil --> apiContactPerson: response
+            deactivate apiUtil
+            activate apiContactPerson
+            apiContactPerson --> controllerContactPerson: response
+            deactivate apiContactPerson
+            controllerContactPerson -> libGet: .defaultDialog()
+            activate libGet
+            libGet --> viewContactPerson: Alert Dialog
+            deactivate libGet
+            viewContactPerson --> eo: Menampilkan Pesan Berhasil
+            eo -> viewContactPerson: Mengklik tombol OK
+           
+            viewContactPerson -> controllerContactPerson: .back(route)
+            controllerContactPerson --> viewContactPerson: Redirect to event list screen
+            viewContactPerson --> eo: Menampilkan halaman daftar event
+
+        end
+
+@enduml
