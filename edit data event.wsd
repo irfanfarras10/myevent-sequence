@@ -1,0 +1,170 @@
+@startuml edit data event
+
+    title "Mengubah Data Event"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    
+    actor "Penyelenggara Event" as eo
+    participant "__:CreateEventDataScreen__" as viewCreateEvent
+    participant "__:EventController__" as controllerCreateEvent
+    participant "__:Get__" as libGet
+    participant "__:ApiEvent__" as apiEvent
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:EventController__" as controllerEventBackend
+    participant "__:EventDto__" as modelEvent
+    participant "__:EventService__" as eventService
+    participant "__:EventDao__" as modelEventDao
+    participant "__:EventRepository__" as repository 
+    loop Data tidak valid
+        opt
+            eo -> viewCreateEvent: Mengunggah foto banner
+            activate eo
+            activate viewCreateEvent
+            viewCreateEvent -> controllerCreateEvent: .pickBannerPhoto()
+            activate controllerCreateEvent
+            controllerCreateEvent --> viewCreateEvent: photo
+            viewCreateEvent --> eo: Menampilkan hasil foto
+        end
+        
+        
+        opt
+            eo -> viewCreateEvent: Memasukkan nama event 
+            viewCreateEvent -> controllerCreateEvent: .validateName(name)
+            alt Nama tidak valid
+                controllerCreateEvent --> viewCreateEvent: nameErrorMessage 
+                viewCreateEvent --> eo: Menampilkan pesan error
+            end
+        end
+
+        opt
+            eo -> viewCreateEvent: Memasukkan deskripsi event 
+            viewCreateEvent -> controllerCreateEvent: .validateDescription(description)
+            alt Nama tidak valid
+                controllerCreateEvent --> viewCreateEvent: descriptionErrorMessage 
+                viewCreateEvent --> eo: Menampilkan pesan error
+            end
+        end
+
+        opt
+            eo -> viewCreateEvent: Memasukkan tanggal mulai event
+            viewCreateEvent -> controllerCreateEvent: .setEventDateStart()
+            eo -> viewCreateEvent: Memasukkan tanggal selesai event
+            viewCreateEvent -> controllerCreateEvent: .setEventDateEnd()
+            alt Tanggal awal dan akhir tidak valid
+                controllerCreateEvent --> viewCreateEvent: dateEventErrorMessage
+                viewCreateEvent --> eo: Menampilkan pesan error
+            end
+        end
+       
+        opt
+            eo -> viewCreateEvent: Memasukkan jam mulai event
+            viewCreateEvent -> controllerCreateEvent: .setEventTimeStart()
+            eo -> viewCreateEvent: Memasukkan jam selesai event
+            viewCreateEvent -> controllerCreateEvent: .setEventTimeEnd()
+            alt jam awal dan akhir tidak valid
+                controllerCreateEvent --> viewCreateEvent: timeEventErrorMessage
+                viewCreateEvent --> eo: Menampilkan pesan error
+            end
+        end
+
+        opt
+            eo -> viewCreateEvent: Memilih jenis tempat event 
+            viewCreateEvent -> controllerCreateEvent: .setEventVenueCategory(venue)
+            alt Jenis tempat event di pilih
+                alt Lokasi onsite
+                    eo -> viewCreateEvent: Memasukkan nama dan memilih lokasi berdasarkan rekomendasi    
+                    viewCreateEvent -> controllerCreateEvent: .validateLocation(location)
+                else Lokasi online
+                    eo -> viewCreateEvent: Memasukkan link  
+                    viewCreateEvent -> controllerCreateEvent: .validateLocation(location)
+                end
+            end
+        end
+
+        opt
+            eo -> viewCreateEvent: Memilih kategori event
+            viewCreateEvent -> controllerCreateEvent: .setEventCategory(category)
+        end
+    end
+
+    eo -> viewCreateEvent: Mengklik tombol simpan data even
+    viewCreateEvent -> controllerCreateEvent: .updateEvent()
+    
+    controllerCreateEvent -> apiEvent: .updateEvent(id, apiRequest)
+    activate apiEvent
+    apiEvent -> apiUtil: .apiRequestMultipartPost(endpoint, data)
+    activate apiUtil
+    apiUtil -> controllerEventBackend: HTTP multipart request
+    activate controllerEventBackend
+    controllerEventBackend -> modelEvent: .EventDto()
+    activate modelEvent 
+    modelEvent --> controllerEventBackend: eventData
+    deactivate 
+    controllerEventBackend -> controllerEventBackend: .setData(eventData)
+    controllerEventBackend -> eventService: .eventUpdate(eventData, id)
+    activate eventService
+    eventService -> modelEventDao: .EventDao()
+    activate modelEventDao
+    modelEventDao --> eventService: newEvent
+    deactivate modelEventDao
+    eventService -> eventService: .setData(data)
+    activate eventService
+    deactivate eventService
+
+    eventService -> repository: .save(newEvent)
+    activate repository
+
+    alt Insert gagal
+        repository --> eventService: Exception
+        deactivate repository 
+        eventService --> controllerEventBackend: Exception
+        deactivate eventService
+        controllerEventBackend --> apiUtil: JSON Response
+        deactivate controllerEventBackend
+        apiUtil --> apiEvent: response
+        deactivate apiUtil
+        apiEvent --> controllerCreateEvent: response
+        deactivate apiEvent
+        controllerCreateEvent -> libGet: .defaultDialog()
+        activate libGet
+        libGet --> viewCreateEvent: Alert Dialog
+        deactivate libGet
+        viewCreateEvent --> eo: Menampilkan pesan error
+    else Insert berhasil
+        activate repository
+        repository --> eventService: eventId
+        deactivate repository 
+        activate eventService
+        eventService --> controllerEventBackend: eventId
+        deactivate eventService
+        activate controllerEventBackend
+        controllerEventBackend --> apiUtil: JSON Response
+        deactivate controllerEventBackend
+        activate apiUtil
+        apiUtil --> apiEvent: response
+        deactivate apiUtil
+        activate apiEvent
+        apiEvent --> controllerCreateEvent: response
+        deactivate apiEvent
+        controllerCreateEvent -> libGet: .defaultDialog()
+        activate libGet
+        libGet --> viewCreateEvent: Alert Dialog
+        viewCreateEvent --> eo: Menampilkan pesan
+        eo -> viewCreateEvent: Mengklik tombol OK
+        viewCreateEvent --> controllerCreateEvent: .back()
+        controllerCreateEvent --> libGet: .back()
+        libGet --> viewCreateEvent: Event Detail Screen
+        deactivate libGet
+        viewCreateEvent --> eo: Menampilkan halaman detail event
+    end 
+
+@enduml
