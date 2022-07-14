@@ -1,0 +1,77 @@
+@startuml melihat detail pembayaran
+
+    title "Melihat Detail Pembayaran"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:ParticipantScreen__" as view
+    participant "__:ParticipantController__" as controller
+    participant "__:Get__" as get
+    participant "__:ApiParticipant__" as apiParticipant
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:ParticipantController__" as controllerParticipant
+    participant "__:ParticipantService__" as serviceParticipant
+    participant "__:ParticipantRepository__" as repositoryParticipant
+    participant "__:TicketParticipantRepository__" as repositoryParticipantTicket
+
+    eo -> view: Mengklik daftar peserta
+    activate eo
+    activate view
+
+    view -> controller: .getWaitingConfirmationParticipantDetail(index) 
+    activate controller
+    
+    controller -> apiParticipant: .getDetailParticipantWait(eventId, participantId)
+    activate apiParticipant
+    
+    apiParticipant -> apiUtil: .apiRequestGet(endpoint)
+    activate apiUtil
+
+    apiUtil -> controllerParticipant: HTTP Request
+    activate controllerParticipant
+
+    controllerParticipant -> serviceParticipant: .getDetailParticipant(eventId, participantId)
+    activate serviceParticipant
+    
+    serviceParticipant -> repositoryParticipant: .findById(participantId)
+    activate repositoryParticipant
+    repositoryParticipant --> serviceParticipant: newParticipant
+    deactivate
+
+    serviceParticipant -> repositoryParticipantTicket: .findByParticipantId(participantId)
+    activate repositoryParticipantTicket
+    repositoryParticipantTicket --> serviceParticipant: ticketData
+    deactivate
+
+    serviceParticipant -> serviceParticipant: .setData()
+    activate serviceParticipant
+    deactivate
+
+    serviceParticipant --> controllerParticipant: ViewEventParticipantDetailApiResponse
+    deactivate serviceParticipant
+
+    controllerParticipant --> apiUtil: JSON Response
+    deactivate
+
+    apiUtil --> apiParticipant: response
+    deactivate
+
+    apiParticipant --> controller: response
+    deactivate
+
+    controller -> get: .dialog()
+    activate get
+
+    get --> view: Alert Dialog
+    deactivate
+    view --> eo: Menampilkan detail pembayaran
+@enduml
