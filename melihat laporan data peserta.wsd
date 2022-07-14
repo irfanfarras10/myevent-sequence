@@ -1,0 +1,68 @@
+@startuml melihat laporan data peserta
+
+    title "Import Laporan Data Peserta"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo 
+    participant "__:ParticipantScreen__" as view
+    participant "__:ParticipantController__" as controller
+    participant "__:Get__" as get
+    participant "__:ApiParticipant__" as apiParticipant
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:ParticipantController__" as controllerBackend
+    participant "__:ParticipantService__" as serviceParticipant
+    participant "__:ParticipantRepository__" as repositoryParticipant
+    participant "__:ExcelHelper__" as helper
+
+    eo -> view: Mengklik tombol unduh file laporan peserta
+    activate eo
+    activate view
+    
+    view -> controller: .downloadParticipantReport()
+    activate controller
+
+    controller -> apiParticipant: .downloadParticipantReport(eventId)
+    activate apiParticipant
+
+    apiParticipant -> apiUtil: .apiRequestDownload(endpoint)
+    activate apiUtil 
+
+    apiUtil -> controllerBackend: HTTP Request
+    activate controllerBackend
+
+    controllerBackend -> serviceParticipant: .load(eventId)
+    activate serviceParticipant
+
+    serviceParticipant -> repositoryParticipant: .findByEvent(id)
+    activate repositoryParticipant
+    repositoryParticipant --> serviceParticipant: participants
+    deactivate
+
+    serviceParticipant -> helper: .downloadExcel(participants)
+    activate helper
+    helper --> serviceParticipant: file
+    deactivate 
+    serviceParticipant --> controllerBackend: ByteArrayInputStream
+    deactivate
+    controllerBackend --> apiUtil: JSON Response
+    deactivate
+    apiUtil --> apiParticipant: response
+    deactivate
+    apiParticipant --> controller: response
+    deactivate apiParticipant
+    controller -> get: .dialog
+    activate get
+
+    get --> view: Alert Dialog
+    deactivate get
+    view --> eo: Menampilkan pesan popup
+@enduml
