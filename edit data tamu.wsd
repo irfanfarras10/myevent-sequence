@@ -1,6 +1,6 @@
-@startuml menambah data tamu
+@startuml edit data tamu
 
-    title "Menambahkan Data Tamu"
+    title "Mengubah Data Tamu"
     hide footbox
     skinparam shadowing false
     skinparam sequence {    
@@ -26,33 +26,39 @@
     participant "__:EventGuestRepository__" as repositoryGuest
 
     loop Data tidak valid
-        eo -> viewGuest: Memasukkan nama
-        activate eo
-        activate viewGuest
-        viewGuest -> controllerGuest: .validateName(name)
-        alt Nama tidak valid
-            controllerGuest --> viewGuest: nameErrorMessage 
-            viewGuest --> eo: Menampilkan pesan error
+        opt
+            eo -> viewGuest: Memasukkan nama
+            activate eo
+            activate viewGuest
+            viewGuest -> controllerGuest: .validateName(name)
+            alt Nama tidak valid
+                controllerGuest --> viewGuest: nameErrorMessage 
+                viewGuest --> eo: Menampilkan pesan error
+            end
         end
 
-        eo -> viewGuest: Memasukkan email
-        viewGuest -> controllerGuest: .validateEmail(email)
-        alt Nama tidak valid
-            controllerGuest --> viewGuest: emailErrorMessage 
-            viewGuest --> eo: Menampilkan pesan error
+        opt
+            eo -> viewGuest: Memasukkan email
+            viewGuest -> controllerGuest: .validateEmail(email)
+            alt Nama tidak valid
+                controllerGuest --> viewGuest: emailErrorMessage 
+                viewGuest --> eo: Menampilkan pesan error
+            end
         end
 
-        eo -> viewGuest: Memasukkan nomor HP
-        viewGuest -> controllerGuest: .validatePhoneNumber(phoneNumber)
-        alt Nama tidak valid
-            controllerGuest --> viewGuest: phoneNumberErrorMessage 
-            viewGuest --> eo: Menampilkan pesan error
+        opt
+            eo -> viewGuest: Memasukkan nomor HP
+            viewGuest -> controllerGuest: .validatePhoneNumber(phoneNumber)
+            alt Nama tidak valid
+                controllerGuest --> viewGuest: phoneNumberErrorMessage 
+                viewGuest --> eo: Menampilkan pesan error
+            end
         end
     end
 
     eo -> viewGuest: Mengklik tombol simpan
 
-    viewGuest -> controllerGuest: .createGuest()
+    viewGuest -> controllerGuest: .updateGuest()
     activate controllerGuest
 
     controllerGuest -> modelRequest: .fromJson(data)
@@ -60,16 +66,16 @@
     modelRequest --> controllerGuest: apiRequest
     deactivate
 
-    controllerGuest -> apiGuest: .createGuest(eventId, data)
+    controllerGuest -> apiGuest: .updateGuest(eventId, guestId, data)
     activate apiGuest
 
-    apiGuest -> apiUtil: .apiRequestPost(endpoint, data)
+    apiGuest -> apiUtil: .apiRequestPut(endpoint, data)
     activate apiUtil
 
     apiUtil -> controllerGuestBackend: HTTP Request
     activate controllerGuestBackend
 
-    controllerGuestBackend -> serviceGuest: .create(id, guestDto)
+    controllerGuestBackend -> serviceGuest: .updateGuest(eventId, guestId, guestDto)
     activate serviceGuest
 
     serviceGuest -> repositoryEvent: .findById(eventId)
@@ -77,7 +83,12 @@
     repositoryEvent --> serviceGuest: eventData
     deactivate 
 
-    serviceGuest -> modelEventGuest: .EventGuestDao()
+    serviceGuest -> repositoryGuest: .findById(eventId)
+    activate repositoryGuest
+    repositoryGuest --> serviceGuest: currentGuest
+    deactivate 
+
+    serviceGuest -> modelEventGuest: .get()
     activate modelEventGuest
     modelEventGuest --> serviceGuest: guest
     deactivate 
