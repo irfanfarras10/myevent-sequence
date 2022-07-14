@@ -1,0 +1,45 @@
+@startuml mengunduh file jadwal kalender
+
+    title "Mengunduh File Jadwal Kalendar"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo 
+    participant "__:AgendaScreen__" as viewAgenda
+    participant "__:AgendaController__" as controllerAgenda
+    participant "__:File__" as file
+    participant "__:Get__" as get
+
+    eo -> viewAgenda: Mengklik tombol Unduh File Kalendar (ICS)
+    activate eo
+    activate viewAgenda
+
+    viewAgenda -> controllerAgenda: .writeIcsFile(event)
+    activate controllerAgenda
+
+    controllerAgenda -> file: .File(path)
+    activate file
+    file --> controllerAgenda: file   
+    deactivate file
+
+    controllerAgenda -> controllerAgenda: .writeAsString(fileContent)
+    activate controllerAgenda
+    deactivate controllerAgenda
+
+    controllerAgenda -> get: .deafultDialog()
+    activate get
+    get --> controllerAgenda: DefaultDialog 
+    deactivate 
+    controllerAgenda --> viewAgenda: DefaultDialog 
+    deactivate
+    viewAgenda --> eo: Menampilkan pesan status
+    deactivate
+@enduml

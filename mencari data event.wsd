@@ -1,0 +1,29 @@
+@startuml "mencari data event"
+
+    title "Mencari Data Event"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:EventScreen__" as viewEventList
+    participant "__:EventListController__" as controllerEventList
+
+    eo -> viewEventList: Memasukkan kata kunci nama
+    activate eo
+    activate viewEventList
+    viewEventList -> controllerEventList: .searchEvent(keyword)
+    activate controllerEventList
+    controllerEventList --> viewEventList: searchEventList
+    deactivate
+    viewEventList --> eo: Menampilkan daftar event berdasarkan hasil pencarian
+    
+
+@enduml

@@ -1,0 +1,143 @@
+@startuml sequence_diagram_melihat_profil
+
+    title "Mengubah Profil"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+
+    actor "Penyelenggara Event" as eo
+    participant "__:ProfileScreen__" as viewProfile
+    participant "__:ProfileController__" as controllerProfile
+    participant "__:UpdateProfileApiRequestModel__" as modelUpdateRequest
+    participant "__:ApiResponseModel__" as apiResponseModel
+    participant "__:Get__" as libGet
+    participant "__:ApiProfile__" as apiProfile
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:EventOrganizerController__" as controllerEventOrganizer
+    participant "__:EventOrganizerService__" as serviceEventOrganizer
+    participant "__:EventOrganizerRepository__" as repositoryEventOrganizer
+    participant "__:EventOrganizerDao__" as modelEventOrganizer
+
+    loop Data tidak valid
+        activate eo
+        eo -> viewProfile: Mengisi nama event organizer
+        activate viewProfile
+        viewProfile -> controllerProfile: .validateOrganizerName(organizerName)
+        activate controllerProfile
+        alt Nama organizer tidak valid
+            controllerProfile --> viewProfile: organizerNameErrorMessage
+            viewProfile --> eo: Menampilkan pesan error
+        end 
+        eo -> viewProfile: Mengisi email
+        viewProfile -> controllerProfile: .validateEmail(email)
+        alt Email tidak valid
+            controllerProfile --> viewProfile: passwordErrorMessage
+            viewProfile --> eo: Menampilkan pesan error
+        end 
+        eo -> viewProfile: Mengisi nomor HP
+        viewProfile -> controllerProfile: .validatePhoneNumber(phoneNumber)
+        alt Nomor HP tidak valid
+            controllerProfile --> viewProfile: phoneNumberErrorMessage
+            viewProfile --> eo: Menampilkan pesan error
+        end 
+    end
+    
+    controllerProfile -> modelUpdateRequest: .fromJson(data)
+    activate modelUpdateRequest
+    modelUpdateRequest --> controllerProfile: updateProfileApiRequest
+    deactivate modelUpdateRequest
+
+    controllerProfile -> apiProfile: .updateProfile(updateProfileApiRequest)
+    activate apiProfile
+    apiProfile -> apiUtil: .apiRequestPut(endpoint, data)
+    activate apiUtil
+
+    apiUtil -> controllerEventOrganizer: HTTP Request
+    activate controllerEventOrganizer
+
+    controllerEventOrganizer -> serviceEventOrganizer: .update(user)
+    activate serviceEventOrganizer
+
+    serviceEventOrganizer -> repositoryEventOrganizer: .findById(id)
+    activate repositoryEventOrganizer
+    repositoryEventOrganizer --> serviceEventOrganizer: currentUser
+    deactivate repositoryEventOrganizer
+    
+    serviceEventOrganizer -> modelEventOrganizer: .get()
+    activate modelEventOrganizer
+    modelEventOrganizer --> serviceEventOrganizer: newUser
+    deactivate modelEventOrganizer
+
+    serviceEventOrganizer -> serviceEventOrganizer: .setData(data)
+    activate serviceEventOrganizer 
+
+    deactivate serviceEventOrganizer
+    serviceEventOrganizer -> serviceEventOrganizer: .validateUserDataForUpdate(signUpApiRequest)
+    activate serviceEventOrganizer
+
+    alt Data tidak valid
+        serviceEventOrganizer --> controllerEventOrganizer: Exception
+        deactivate serviceEventOrganizer
+        deactivate
+        controllerEventOrganizer --> apiUtil: JSON Response 
+        deactivate
+        apiUtil --> apiProfile: response
+        deactivate
+        apiProfile --> controllerProfile: response
+        deactivate
+        controllerProfile --> viewProfile: errorMessage
+        viewProfile --> eo: Menampilkan pesan error
+    else Data valid
+        serviceEventOrganizer -> repositoryEventOrganizer: .save(newUser)
+        activate repositoryEventOrganizer
+        alt Username atau email sudah digunakan
+            repositoryEventOrganizer --> serviceEventOrganizer: Exception
+            deactivate
+            serviceEventOrganizer --> controllerEventOrganizer: Exception
+            deactivate serviceEventOrganizer
+            activate controllerEventOrganizer
+            controllerEventOrganizer --> apiUtil: JSON Response
+            deactivate controllerEventOrganizer
+            activate apiUtil
+            apiUtil --> apiProfile: response
+            deactivate apiUtil
+            activate apiProfile
+            apiProfile --> controllerProfile: response
+            deactivate apiProfile
+            controllerProfile --> viewProfile: errorMessage
+            viewProfile --> eo: Menampilkan pesan error
+        else Update berhasil
+            activate controllerEventOrganizer
+            controllerEventOrganizer --> apiUtil: JSON Response
+            deactivate controllerEventOrganizer
+            activate apiUtil
+            apiUtil --> apiProfile: response
+            deactivate apiUtil
+            activate apiProfile
+            apiProfile --> controllerProfile: response 
+            deactivate apiProfile
+            controllerProfile --> apiResponseModel: .fromJson(response)
+            activate apiResponseModel
+            apiResponseModel --> controllerProfile: signUpApiResponse
+            deactivate apiResponseModel
+            controllerProfile --> libGet: .dialog()
+            activate libGet
+            libGet --> viewProfile: .dialog()
+            deactivate libGet
+            viewProfile --> eo: Menampilkan pesan registrasi berhasil
+            eo -> viewProfile: Mengklik tombol OK
+            viewProfile -> controllerProfile: .loadData()
+            controllerProfile -> controllerProfile: .loadData()
+            activate controllerProfile
+        end
+    end
+
+@enduml

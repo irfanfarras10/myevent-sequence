@@ -1,0 +1,33 @@
+@startuml mengunduh file jadwal kalender
+
+    title "Import Jadwal ke Google Calendar"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo 
+    participant "__:AgendaScreen__" as viewAgenda
+    participant "__:AgendaController__" as controllerAgenda
+    participant "__:UrlLauncher__" as urlLauncher
+
+    eo -> viewAgenda: Mengklik tombol Tambahkan Event ke Google Calendar
+    activate eo
+    activate viewAgenda
+
+    viewAgenda -> controllerAgenda: .createEventToGoogleCalendar(event)
+    activate controllerAgenda
+
+    controllerAgenda -> urlLauncher: .launch(googleCalendarUrl)
+    deactivate controllerAgenda
+    activate urlLauncher
+    urlLauncher --> viewAgenda: intent to browser
+    deactivate
+    viewAgenda --> eo: Menampilkan halaman Google Calendar
+@enduml

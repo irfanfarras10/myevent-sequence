@@ -1,0 +1,154 @@
+@startuml registrasi akun
+
+    title "Registrasi Akun"
+    hide footbox
+    skinparam  shadowing false
+
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:SignUpScreen__" as viewDaftar
+    participant "__:AuthController__" as controllerDaftar
+    participant "__:SignUpApiRequestModel__" as modelDaftarRequest
+    participant "__:ApiResponseModel__" as apiResponseModel
+    participant "__:Get__" as libGet
+    participant "__:ApiAuth__" as apiAuth
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:EventOrgaizerControler__" as controllerEventOrganizer
+    participant "__:EventOrganizerService__" as serviceEventOrganizer
+    participant "__:EventOrganizerDao__" as modelEventOrganizer
+    participant "__:EventOrganizerRepository__" as repositoryEventOrganizer
+  
+    loop Data tidak valid
+        activate eo
+        eo -> viewDaftar: Mengisi username
+        activate viewDaftar
+        viewDaftar -> controllerDaftar: .validateUsername(username)
+        alt Username tidak valid
+            activate controllerDaftar
+            controllerDaftar --> viewDaftar: usernameErrorMessage
+            viewDaftar --> eo: Menampilkan pesan error
+        end 
+        eo -> viewDaftar: Mengisi nama event organizer
+        viewDaftar -> controllerDaftar: .validateOrganizerName(organizerName)
+        alt Nama organizer tidak valid
+            controllerDaftar --> viewDaftar: organizerNameErrorMessage
+            viewDaftar --> eo: Menampilkan pesan error
+        end 
+        eo -> viewDaftar: Mengisi email
+        viewDaftar -> controllerDaftar: .validateEmail(email)
+        alt Email tidak valid
+            controllerDaftar --> viewDaftar: passwordErrorMessage
+            viewDaftar --> eo: Menampilkan pesan error
+        end 
+        eo -> viewDaftar: Mengisi kata sandi
+        viewDaftar -> controllerDaftar: .validatePassword(password)
+        alt Password tidak valid
+            controllerDaftar --> viewDaftar: passwordErrorMessage
+            viewDaftar --> eo: Menampilkan pesan error
+        end 
+        eo -> viewDaftar: Mengisi nomor HP
+        viewDaftar -> controllerDaftar: .validatePhoneNumber(phoneNumber)
+        alt Nomor HP tidak valid
+            controllerDaftar --> viewDaftar: phoneNumberErrorMessage
+            viewDaftar --> eo: Menampilkan pesan error
+        end 
+    end
+
+    eo -> viewDaftar: Mengklik tombol daftar
+    viewDaftar -> controllerDaftar: .signUp()
+    controllerDaftar -> controllerDaftar: .resetState()
+    activate controllerDaftar
+    controllerDaftar -> modelDaftarRequest: .fromJson(data)
+    deactivate
+    activate modelDaftarRequest
+    modelDaftarRequest --> controllerDaftar: signUpApiRequest
+    deactivate modelDaftarRequest
+    controllerDaftar -> apiAuth: .signUp(signUpApiRequest) 
+    activate apiAuth
+    apiAuth -> apiUtil: .apiRequestPost(endpoint, data)
+    activate apiUtil
+    apiUtil -> controllerEventOrganizer: HTTP Request
+    activate controllerEventOrganizer
+    controllerEventOrganizer -> serviceEventOrganizer: .insert(signUpApiRequest)
+    activate serviceEventOrganizer
+    serviceEventOrganizer -> modelEventOrganizer: .EventOrganizerDao()
+    activate modelEventOrganizer
+    modelEventOrganizer --> serviceEventOrganizer: newUser
+    deactivate modelEventOrganizer
+    serviceEventOrganizer -> serviceEventOrganizer: .setData(data)
+    activate serviceEventOrganizer
+    deactivate
+    serviceEventOrganizer -> serviceEventOrganizer: .validateUserDataForSignUp(signUpApiRequest)
+    activate serviceEventOrganizer
+    alt Data tidak valid
+        serviceEventOrganizer --> controllerEventOrganizer: Exception
+        deactivate serviceEventOrganizer
+        deactivate
+        controllerEventOrganizer --> apiUtil: JSON Response 
+        deactivate
+        apiUtil --> apiAuth: response
+        deactivate
+        apiAuth --> controllerDaftar: response
+        deactivate
+        controllerDaftar --> viewDaftar: errorMessage
+        viewDaftar --> eo: Menampilkan pesan error
+        activate serviceEventOrganizer
+    else Data valid
+        serviceEventOrganizer -> repositoryEventOrganizer: .save(newUser)
+        activate repositoryEventOrganizer
+        alt Username atau email sudah digunakan
+            repositoryEventOrganizer --> serviceEventOrganizer: Exception
+            deactivate
+            serviceEventOrganizer --> controllerEventOrganizer: Exception
+            deactivate serviceEventOrganizer
+            activate controllerEventOrganizer
+            controllerEventOrganizer --> apiUtil: JSON Response
+            deactivate controllerEventOrganizer
+            activate apiUtil
+            apiUtil --> apiAuth: response
+            deactivate apiUtil
+            activate apiAuth
+            apiAuth --> controllerDaftar: response
+            deactivate apiAuth
+            controllerDaftar --> viewDaftar: errorMessage
+            viewDaftar --> eo: Menampilkan pesan error
+        else Daftar berhasil 
+            activate controllerEventOrganizer
+            controllerEventOrganizer --> apiUtil: JSON Response
+            deactivate controllerEventOrganizer
+            activate apiUtil
+            apiUtil --> apiAuth: response
+            deactivate apiUtil
+            activate apiAuth
+            apiAuth --> controllerDaftar: response 
+            deactivate apiAuth
+            controllerDaftar --> apiResponseModel: .fromJson(response)
+            activate apiResponseModel
+            apiResponseModel --> controllerDaftar: signUpApiResponse
+            deactivate apiResponseModel
+            controllerDaftar --> libGet: .dialog()
+            activate libGet
+            libGet --> viewDaftar: .dialog()
+            deactivate libGet
+            viewDaftar --> eo: Menampilkan pesan registrasi berhasil
+            eo -> viewDaftar: Mengklik tombol OK
+            viewDaftar -> controllerDaftar: .offAllNamed(routeName)
+            controllerDaftar -> libGet: .offAllNamed(routeName)
+            activate libGet
+            libGet --> controllerDaftar: SignInScreen
+            deactivate libGet
+            controllerDaftar --> viewDaftar: dispose()
+            deactivate controllerDaftar
+            viewDaftar --> eo: Menampilkan halaman masuk
+            deactivate viewDaftar
+        end     
+    end
+@enduml

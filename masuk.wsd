@@ -1,0 +1,122 @@
+@startuml masuk
+    title "Masuk"
+    hide footbox
+    skinparam  shadowing false
+
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor eo as "Penyelenggara Event"
+    participant viewMasuk as "__:SignInScreen__"
+    participant controllerMasuk as "__:AuthController__"
+    participant modelMasukRequest as "__:SignInApiRequestModel__"
+    participant modelMasukResponse as "__:SignInApiResponseModel__"
+    participant libSharedPref as "__:SharedPreferences__"
+    participant libGetx as "__:Get__"
+    participant apiAuth as "__:ApiAuth__"
+    participant apiUtil as "__:ApiUtil__"
+    participant controllerUser as "__:EventOrganizerController__"
+    participant authenticateManager as "__:AuthenticationManager__"
+    participant eventAuthDto as "__EventOrganizerAuthDto__"
+    participant jwtTokenUtil as "__JwtTokenUtil__"
+    participant jjwt as "__Jwts__"
+
+    loop Data tidak valid
+        activate eo
+        eo -> viewMasuk: Memasukkan username
+        activate viewMasuk
+        viewMasuk -> controllerMasuk: .validateUsername(username)
+        activate controllerMasuk
+        alt Username tidak valid
+            controllerMasuk --> viewMasuk: usernameErrorMessage
+            viewMasuk --> eo: Menampilkan pesan error
+        end
+
+        activate eo
+        eo -> viewMasuk: Memasukkan kata sandi
+        viewMasuk -> controllerMasuk: .validatePassword(password)
+        alt Password tidak valid
+            controllerMasuk --> viewMasuk: passwordErrorMessage
+            viewMasuk --> eo: Menampilkan pesan error
+        end
+    end
+
+    eo -> viewMasuk: Mengklik tombol masuk
+    viewMasuk -> controllerMasuk: .signIn()
+    controllerMasuk -> controllerMasuk: .resetState()
+    activate controllerMasuk
+    deactivate
+    controllerMasuk -> modelMasukRequest: .fromJson(data)
+    activate modelMasukRequest
+    modelMasukRequest --> controllerMasuk: signInApiRequest
+    deactivate
+    controllerMasuk -> apiAuth: .signIn(signInApiRequest)
+    activate apiAuth
+    apiAuth -> apiUtil: .apiRequestPost(endpoint, data)
+    activate apiUtil
+    apiUtil -> controllerUser: HTTP Request
+    activate controllerUser
+    controllerUser -> controllerUser: .authenticate(username, password)
+    activate controllerUser
+    deactivate
+    controllerUser -> authenticateManager: .authenticate(username, password)
+    activate authenticateManager
+    
+    alt Kredensial salah
+        authenticateManager --> controllerUser: Exception
+        deactivate
+        controllerUser --> apiUtil: JSON response
+        deactivate
+        apiUtil --> apiAuth: response
+        deactivate
+        apiAuth --> controllerMasuk: response
+        controllerMasuk --> viewMasuk: errorMessage
+        deactivate
+        viewMasuk --> eo: Menampilkan pesan error
+    else Kredensial benar
+        activate controllerUser
+        controllerUser -> eventAuthDto: .loadByUsername(username)
+        activate eventAuthDto
+        eventAuthDto --> controllerUser: eventOrganizerAuthDto
+        deactivate
+        controllerUser -> jwtTokenUtil: .generateToken(eventOrganizerAuthDto)
+        activate jwtTokenUtil
+        jwtTokenUtil -> jjwt: .builder()
+        activate jjwt
+        jjwt --> jwtTokenUtil: token
+        deactivate
+        jwtTokenUtil --> controllerUser: token
+        deactivate
+        controllerUser --> apiUtil: JSON response
+        deactivate controllerUser
+        activate apiUtil
+        apiUtil --> apiAuth: response
+        deactivate
+        activate apiAuth
+        apiAuth --> controllerMasuk: response
+        deactivate
+        controllerMasuk -> modelMasukResponse: .fromJson(response)
+        activate modelMasukResponse
+        modelMasukResponse --> controllerMasuk: signInApiResponseModel
+        deactivate
+        controllerMasuk -> libSharedPref: .getInstance()
+        activate libSharedPref
+        libSharedPref --> controllerMasuk: SharedPreferences
+        controllerMasuk -> libSharedPref: .setString(token)
+        deactivate libSharedPref
+        controllerMasuk -> libGetx: .back()
+        activate libGetx
+        controllerMasuk -> libGetx: .offAllNamed(routeName)
+        deactivate 
+        controllerMasuk --> viewMasuk: MainScreen
+        deactivate controllerMasuk
+        viewMasuk --> eo: Menampilkan halaman utama
+        deactivate viewMasuk
+    end
+@enduml

@@ -1,0 +1,130 @@
+@startuml menambahkan data tiket
+
+    title "Menambahkan Data Tiket"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo
+    participant "__:CreateEventTicketScreen__" as viewTicket
+    participant "__:TicketController__" as controllerTicket
+    participant "__:Get__" as libGet
+    participant "__:ApiTicket__" as apiTicket
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:TicketController__" as controllerTicketBackend
+    participant "__:TicketService__" as serviceTicket
+    participant "__:EventRepository__" as repositoryEvent
+    participant "__:TicketRepository__" as repositoryTicket
+
+    opt Tiket harian
+        eo -> viewTicket: Memilih jenis tiket harian
+        activate eo
+        activate viewTicket
+        viewTicket -> controllerTicket: .setIsDailyTicket(value)
+        activate controllerTicket
+    end
+
+    opt Tiket berbayar
+        eo -> viewTicket: Memilih jenis tiket berbayar
+        viewTicket -> controllerTicket: .setIsPayedTicket(value)
+    end
+    
+    eo -> viewTicket: Memilih waktu periode registrasi
+    viewTicket -> controllerTicket: .setRegistrationDate()
+
+    loop < 4 tiket
+        eo -> viewTicket: Memasukkan nama tiket
+        viewTicket -> controllerTicket: .setTicketName(name)
+        alt Data tidak valid
+            viewTicket <-- controllerTicket: nameErrorMessage
+            eo <-- controllerTicket: Menampilkan pesan error
+        end
+
+        eo -> viewTicket: Memasukkan jumlah tiket 
+        viewTicket -> controllerTicket: .setTicketQuota(quota)
+        alt Data tidak valid
+            viewTicket <-- controllerTicket: quotaErrorMessage
+            eo <-- controllerTicket: Menampilkan pesan error
+        end
+
+        alt Tiket berbayar
+            eo -> viewTicket: Memasukkan harga tiket 
+            viewTicket -> controllerTicket: .setTicketPrice(name)
+            alt Data tidak valid
+                viewTicket <-- controllerTicket: priceErrorMessage
+                eo <-- controllerTicket: Menampilkan pesan error
+            end
+        end
+    end
+
+    eo -> viewTicket: Mengklik tombol simpan tiket
+    viewTicket -> controllerTicket: .createTicket()
+    loop request API insert ticket sebanyak jumlah tiket
+        controllerTicket -> apiTicket: .createTicket(eventId, data)
+        activate apiTicket
+        apiTicket -> apiUtil: .apiRequestPost(endpoint, data)
+        activate apiUtil
+        apiUtil -> controllerTicketBackend: HTTP Request
+        activate controllerTicketBackend
+        controllerTicketBackend -> serviceTicket: .create(id, data)
+        activate serviceTicket
+        serviceTicket -> serviceTicket: .setData(data)
+        activate serviceTicket
+        deactivate serviceTicket
+        serviceTicket -> repositoryEvent: .save(eventData)
+        activate repositoryEvent
+        deactivate repositoryEvent
+        serviceTicket -> repositoryTicket: .save(ticketData)
+        activate repositoryTicket
+        alt Insert gagal
+            repositoryTicket --> serviceTicket: Exception
+            deactivate 
+            serviceTicket --> controllerTicketBackend: Exception
+            deactivate 
+            controllerTicketBackend --> apiUtil: JSON Response
+            deactivate 
+            apiUtil --> apiTicket: response 
+            deactivate 
+            apiTicket --> controllerTicket: response 
+            deactivate 
+            controllerTicket -> libGet: .defaultDialog()
+            activate libGet
+            libGet --> viewTicket: Alert Dialog
+            deactivate libGet
+            viewTicket --> eo: Menampilkan Pesan Error
+        else Insert berhasil
+            activate controllerTicketBackend
+            controllerTicketBackend --> apiUtil: JSON Response
+            deactivate controllerTicketBackend
+            activate apiUtil
+            apiUtil --> apiTicket: response
+            deactivate apiUtil
+            activate apiTicket
+            apiTicket --> controllerTicket: response
+            deactivate apiTicket
+            controllerTicket -> libGet: .defaultDialog()
+            activate libGet
+            libGet --> viewTicket: Alert Dialog
+            deactivate libGet
+            viewTicket --> eo: Menampilkan Pesan Berhasil
+            eo -> viewTicket: Mengklik tombol OK
+            alt "Jenis tiket berbayar"
+                viewTicket -> controllerTicket: .toNamed(route)
+                controllerTicket --> viewTicket: Redirect to create event payment screen
+                viewTicket --> eo: Menampilkan halaman tambah pembayaran
+            else
+                viewTicket -> controllerTicket: .toNamed(route)
+                controllerTicket --> viewTicket: Redirect to create event contact person screen
+                viewTicket --> eo: Menampilkan halaman tambah contact person
+            end
+        end
+    end
+
+@enduml
