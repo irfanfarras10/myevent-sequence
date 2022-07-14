@@ -1,0 +1,82 @@
+@startuml konfirmasi pembayaran
+
+    title "Konfirmasi Pembayaran"
+    hide footbox
+    skinparam shadowing false
+    skinparam sequence {    
+        ArrowThickness 1.5
+        ActorFontName Century Gothic
+        ActorBackgroundColor  #C6EFFC
+        ArrowFontName Century Gothic
+        ParticipantBorderThickness 1.5
+        ParticipantBackgroundColor #C6EFFC
+    }
+
+    actor "Penyelenggara Event" as eo 
+    participant "__:ParticipantScreen__" as view
+    participant "__:ParticipantController__" as controller
+    participant "__:Get__" as get
+    participant "__:ApiParticipant__" as apiParticipant
+    participant "__:ApiUtil__" as apiUtil
+    participant "__:ParticipantController__" as controllerBackend
+    participant "__:ParticipantService__" as serviceParticipant
+    participant "__:ParticipantRepository__" as repositoryParticipant
+    participant "__:TicketParticipantRepository__" as repositoryParticipantTicket
+    participant "__:EmailService__" as serviceEmail
+
+    eo -> view: Mengklik tombol konfirmasi
+    activate eo
+    activate view
+    
+    view -> controller: .confirmPayment(index)
+    activate controller
+
+    controller -> apiParticipant: .confirmPayment(eventId, participantId)
+    activate apiParticipant
+
+    apiParticipant -> apiUtil: .apiRequestPost(endpoint)
+    activate apiUtil
+
+    apiUtil -> controllerBackend: HTTP Request
+    activate controllerBackend
+
+    controllerBackend -> serviceParticipant: .confirm(eventId, participantId)
+    activate serviceParticipant
+    
+
+    serviceParticipant -> repositoryParticipant: .findById(participantId)
+    activate repositoryParticipant
+    repositoryParticipant --> serviceParticipant: participantData
+    
+
+    serviceParticipant -> repositoryParticipantTicket: .findById(participantId)
+    activate repositoryParticipantTicket
+    repositoryParticipantTicket --> serviceParticipant: ticketParticipant
+    
+    serviceParticipant -> repositoryParticipant: .save(participantData)
+    deactivate repositoryParticipant
+
+    serviceParticipant -> repositoryParticipantTicket: .save(ticketParticipant)
+    deactivate repositoryParticipantTicket
+
+    serviceParticipant -> serviceEmail: .sendMessage(eventId, participantId, ticketParticipantId)
+    activate serviceEmail
+    deactivate serviceParticipant
+    deactivate serviceEmail
+
+
+    controllerBackend --> apiUtil: JSON Response
+    deactivate
+
+    apiUtil --> apiParticipant: response
+    deactivate
+
+    apiParticipant --> controller: response
+    controller -> get: .dialog()
+    activate get
+    get --> view: Alert Dialog
+    deactivate
+    view --> eo: Menampilkan pesan popup
+    eo -> view: Mengklik tombol OK
+    view -> controller: .loadData()
+@enduml
