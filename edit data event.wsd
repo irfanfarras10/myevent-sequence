@@ -101,7 +101,7 @@
     
     controllerCreateEvent -> apiEvent: .updateEvent(id, apiRequest)
     activate apiEvent
-    apiEvent -> apiUtil: .apiRequestMultipartPost(endpoint, data)
+    apiEvent -> apiUtil: .apiRequestMultipartPut(endpoint, data)
     activate apiUtil
     apiUtil -> controllerEventBackend: HTTP multipart request
     activate controllerEventBackend
