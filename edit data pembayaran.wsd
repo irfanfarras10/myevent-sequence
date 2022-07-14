@@ -23,21 +23,25 @@
     participant "__:EventPaymentRepository__" as repositoryPayment
     
     loop
-        eo -> viewPayment: Memasukkan tipe pembayaran
-        activate eo
-        activate viewPayment
-        viewPayment -> controllerPayment: setPaymentType(index, name)
-        activate controllerPayment
-        alt Data tidak valid
-            controllerPayment --> viewPayment: payment type error message
-            viewPayment --> eo: Menampilkan pesan error
+        opt
+            eo -> viewPayment: Memasukkan tipe pembayaran
+            activate eo
+            activate viewPayment
+            viewPayment -> controllerPayment: setPaymentType(index, name)
+            activate controllerPayment
+            alt Data tidak valid
+                controllerPayment --> viewPayment: payment type error message
+                viewPayment --> eo: Menampilkan pesan error
+            end
         end
 
-        eo -> viewPayment: Memasukkan nomor pembayaran
-        viewPayment -> controllerPayment: setPaymentNumber(index, number)
-        alt Data tidak valid
-            controllerPayment --> viewPayment: payment number error message
-            viewPayment --> eo: Menampilkan pesan error
+        opt
+            eo -> viewPayment: Memasukkan nomor pembayaran
+            viewPayment -> controllerPayment: setPaymentNumber(index, number)
+            alt Data tidak valid
+                controllerPayment --> viewPayment: payment number error message
+                viewPayment --> eo: Menampilkan pesan error
+            end
         end
     end
 
